@@ -1,0 +1,1 @@
+{"environment":"development","error":"relation \"alunos\" does not exist","level":"error","message":"Erro ao criar aluno","service":"api-pv","timestamp":"2026-03-10T23:34:01.444Z"}

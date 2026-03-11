@@ -1,5 +1,7 @@
 // src/controllers/alunoController.js
 const Aluno = require('../models/Aluno');
+const { logger } = require('../lib/logger');
+const MetricsService = require('../services/metricsService');
 
 // Validações auxiliares
 const validarCPF = (cpf) => {
@@ -20,7 +22,7 @@ const validarTelefone = (telefone) => {
 
 // Criar novo aluno
 exports.criarAluno = async (req, res) => {
-    console.log('📝 Recebendo dados do formulário:', req.body);
+    logger.info('Recebendo dados do formulário', { body: req.body });
     
     try {
         const { nomeCompleto, cpf, email, telefone } = req.body;
@@ -79,7 +81,10 @@ exports.criarAluno = async (req, res) => {
         // Criar aluno no banco
         const novoAluno = await Aluno.criar(dadosLimpos);
 
-        console.log('✅ Aluno criado com sucesso:', novoAluno);
+        // 🚀 MÉTRICA DE NEGÓCIO: Aluno cadastrado
+        MetricsService.recordAlunoCadastrado(novoAluno);
+
+        logger.info('Aluno criado com sucesso', { aluno: novoAluno });
 
         res.status(201).json({
             sucesso: true,
@@ -88,7 +93,7 @@ exports.criarAluno = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao criar aluno:', error);
+        logger.error('Erro ao criar aluno', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });
@@ -106,7 +111,7 @@ exports.listarAlunos = async (req, res) => {
             alunos
         });
     } catch (error) {
-        console.error('❌ Erro ao listar alunos:', error);
+        logger.error('Erro ao listar alunos', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });
@@ -131,7 +136,7 @@ exports.buscarAluno = async (req, res) => {
             aluno
         });
     } catch (error) {
-        console.error('❌ Erro ao buscar aluno:', error);
+        logger.error('Erro ao buscar aluno', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });

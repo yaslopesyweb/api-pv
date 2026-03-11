@@ -1,15 +1,17 @@
 // src/controllers/pagamentoController.js
 const Pagamento = require('../models/Pagamento');
 const Aluno = require('../models/Aluno');
-const Pedido = require('../models/Pedido'); // ← ADICIONADO
+const Pedido = require('../models/Pedido');
+const { logger } = require('../lib/logger');
+const MetricsService = require('../services/metricsService');
 
 exports.processarPagamento = async (req, res) => {
-    console.log('💳 Recebendo dados de pagamento:', req.body);
+    logger.info('Recebendo dados de pagamento', { body: req.body });
     
     try {
         const { 
             aluno_id,
-            pedido_id, // ← ADICIONADO
+            pedido_id,
             formaPagamento, 
             responsavelFinanceiro, 
             cartao, 
@@ -22,7 +24,7 @@ exports.processarPagamento = async (req, res) => {
             return res.status(400).json({ erro: 'ID do aluno não informado' });
         }
 
-        if (!pedido_id) { // ← NOVA VALIDAÇÃO
+        if (!pedido_id) {
             return res.status(400).json({ erro: 'ID do pedido não informado' });
         }
 
@@ -41,13 +43,13 @@ exports.processarPagamento = async (req, res) => {
         }
 
         // Verificar se pedido existe
-        const pedido = await Pedido.buscarPorId(pedido_id); // ← NOVO
+        const pedido = await Pedido.buscarPorId(pedido_id);
         if (!pedido) {
             return res.status(404).json({ erro: 'Pedido não encontrado' });
         }
 
         // Verificar se pedido já não foi pago
-        if (pedido.status === 'pago') { // ← NOVO
+        if (pedido.status === 'pago') {
             return res.status(400).json({ erro: 'Pedido já foi pago' });
         }
 
@@ -83,7 +85,7 @@ exports.processarPagamento = async (req, res) => {
         }
 
         // Simular processamento com gateway de pagamento
-        console.log('⏳ Processando pagamento...');
+        logger.info('Processando pagamento');
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Gerar protocolo único
@@ -104,24 +106,26 @@ exports.processarPagamento = async (req, res) => {
             status: 'aprovado'
         });
 
-        // ATUALIZAR STATUS DO PEDIDO ← NOVO
+        // ATUALIZAR STATUS DO PEDIDO
         await Pedido.atualizarStatus(pedido_id, 'pago', novoPagamento.id);
 
-        console.log('✅ Pagamento processado com sucesso:', novoPagamento);
-        console.log('✅ Pedido atualizado para pago:', pedido_id);
+        // 🚀 MÉTRICA DE NEGÓCIO: Pagamento aprovado
+        MetricsService.recordPagamentoAprovado(novoPagamento, pedido_id, aluno_id);
+
+        logger.info('Pagamento processado com sucesso', { pagamento: novoPagamento, pedido_id });
 
         res.status(201).json({
             sucesso: true,
             mensagem: 'Pagamento processado com sucesso',
             pagamento: novoPagamento,
-            pedido: { // ← NOVO
+            pedido: {
                 id: pedido_id,
                 status: 'pago'
             }
         });
 
     } catch (error) {
-        console.error('❌ Erro no processamento do pagamento:', error);
+        logger.error('Erro no processamento do pagamento', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno ao processar pagamento' 
         });
@@ -143,7 +147,7 @@ exports.listarPagamentos = async (req, res) => {
             pagamentos
         });
     } catch (error) {
-        console.error('❌ Erro ao listar pagamentos:', error);
+        logger.error('Erro ao listar pagamentos', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });
@@ -174,7 +178,7 @@ exports.buscarPagamento = async (req, res) => {
             pedido: pedido ? { id: pedido.id, status: pedido.status } : null
         });
     } catch (error) {
-        console.error('❌ Erro ao buscar pagamento:', error);
+        logger.error('Erro ao buscar pagamento', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });
@@ -193,7 +197,7 @@ exports.buscarPagamentosPorAluno = async (req, res) => {
             pagamentos
         });
     } catch (error) {
-        console.error('❌ Erro ao buscar pagamentos do aluno:', error);
+        logger.error('Erro ao buscar pagamentos do aluno', { error: error.message });
         res.status(500).json({ 
             erro: 'Erro interno do servidor' 
         });

@@ -2,9 +2,11 @@
 const Pedido = require('../models/Pedido');
 const Aluno = require('../models/Aluno');
 const Pagamento = require('../models/Pagamento');
+const { logger } = require('../lib/logger');
+const MetricsService = require('../services/metricsService');
 
 exports.criarPedido = async (req, res) => {
-    console.log('📦 Recebendo dados do pedido:', req.body);
+    logger.info('Recebendo dados do pedido', { body: req.body });
     
     try {
         const { aluno_id, itens, total, parcelas } = req.body;
@@ -51,7 +53,12 @@ exports.criarPedido = async (req, res) => {
             itensFormatados
         );
 
-        console.log('✅ Pedido criado com sucesso:', novoPedido);
+        // 🚀 MÉTRICAS DE NEGÓCIO
+        MetricsService.recordPedidoCriado(novoPedido, aluno_id);
+        MetricsService.recordItensPedido(novoPedido.id, itensFormatados, aluno_id);
+        MetricsService.recordCheckoutInicio(aluno_id, total);
+
+        logger.info('Pedido criado com sucesso', { pedido: novoPedido });
 
         res.status(201).json({
             sucesso: true,
@@ -66,7 +73,7 @@ exports.criarPedido = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao criar pedido:', error);
+        logger.error('Erro ao criar pedido', { error: error.message });
         res.status(500).json({ erro: 'Erro interno ao criar pedido' });
     }
 };
@@ -93,7 +100,7 @@ exports.buscarPedido = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao buscar pedido:', error);
+        logger.error('Erro ao buscar pedido', { error: error.message });
         res.status(500).json({ erro: 'Erro interno do servidor' });
     }
 };
@@ -119,7 +126,7 @@ exports.buscarPorNumero = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao buscar pedido:', error);
+        logger.error('Erro ao buscar pedido', { error: error.message });
         res.status(500).json({ erro: 'Erro interno do servidor' });
     }
 };
@@ -137,7 +144,7 @@ exports.listarPedidos = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao listar pedidos:', error);
+        logger.error('Erro ao listar pedidos', { error: error.message });
         res.status(500).json({ erro: 'Erro interno do servidor' });
     }
 };
@@ -160,7 +167,7 @@ exports.atualizarStatus = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao atualizar status:', error);
+        logger.error('Erro ao atualizar status', { error: error.message });
         res.status(500).json({ erro: 'Erro interno do servidor' });
     }
 };

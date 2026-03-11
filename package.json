@@ -16,9 +16,11 @@
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "elastic-apm-node": "^4.15.0",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
